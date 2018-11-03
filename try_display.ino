@@ -1,3 +1,4 @@
+#include <tinyexpr.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
@@ -10,6 +11,7 @@ int x = 32;
 int y = 128;
 int longPressTime = 1000;
 int delayInLongPress = 100;
+int setDigit = 6;
 char map1[] = {'1', '2', '3', '+',
          '4', '5', '6', '-',
          '7', '8', '9', '*',
@@ -84,16 +86,25 @@ void buildAGraph() {
   }
 }
 
-float countByStr() {
+double countByStr() {
+  /*
   bool firstWas = false;
-  float first = 0;
-  float second = 0;
+  bool firstDot = false;
+  int firstDit = 0;
+  double first = 0;
+  double second = 0;
   char dos = '\0';
   for (int i = 0; i < input.length(); i++) {
     if (!firstWas) {
       if ((int)input[i] > 47 && (int)input[i] < 72) {
         first *= 10;
         first += (int)input[i] - 48;
+        if (firstDot) {
+          firstDit++;
+        }
+      }
+      else if (input[i] == '.') {
+        firstDot = true;
       }
       else {
         firstWas = true;
@@ -101,10 +112,12 @@ float countByStr() {
       }
     }
     else {
+      if(true)
       second *= 10;
       second += (int)input[i] - 48;
     }
   }
+  Serial.println((int)(first / second*1000)%10);
   if (dos == '+')
     return first + second;
   if (dos == '-')
@@ -115,6 +128,8 @@ float countByStr() {
     return first / second;
   if (dos == 'r')
     return sqrt(first);
+    */
+  printMoreDigit(te_interp(input.c_str(), &setDigit));
 }
 
 void setup() {
@@ -148,6 +163,10 @@ void doWhileButtonPressed(int button) {
   }
 }
 
+void printMoreDigit(double inp) {
+  dis.print(inp, setDigit);
+}
+
 void afterClick(int button) {
   if (input == "" && map1[button] == 'r') {
     buildAGraph();
@@ -161,7 +180,7 @@ void afterClick(int button) {
       sum -= 1;
       buildAGraph();
     }
-    else if (button == 14) {
+    else if (button == 15) {
       graphOn = false;
     }
   }
@@ -175,7 +194,7 @@ void afterClick(int button) {
   else {
     setupWriting(0, 0);
     dis.clearDisplay();
-    dis.print(countByStr());
+    printMoreDigit(countByStr());
     dis.display();
     input = "";
   }
