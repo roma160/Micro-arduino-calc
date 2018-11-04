@@ -1,4 +1,3 @@
-#include <tinyexpr.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
@@ -15,8 +14,10 @@ int setDigit = 6;
 char map1[] = {'1', '2', '3', '+',
          '4', '5', '6', '-',
          '7', '8', '9', '*',
-         '=', '0', 'r', '/'};
+         '=', '0', 'K', '.'};
 String input = "";
+char twoOp[] = { '+', '-','*', '/', '%' };
+char oneOp[] = {'s', 'c', 'd', 't', 'S', 'C', 'T', 'R', 'r', '!'};
 int startP = 2;
 //out
 int endP = 5;
@@ -25,29 +26,91 @@ int endP2 = 9;
 
 int sum = 0;
 
+String split(String a, char b, int n) {
+  String ret = "";
+  for (int i = 0; i < a.length(); i++) {
+    if (n == 0) {
+      while (a[i] != b && i < a.length()) {
+        ret += a[i];
+        i++;
+      }
+      return ret;
+    }
+    else
+      if (a[i] == b)
+        n--;
+  }
+  return ret;
+}
+int factorial(int a) {
+  if (a == 0)
+    return 1;
+  if (a == 1)
+    return 1;
+  else
+    return factorial(a - 1)*a;
+}
+double operation(double a, double b, char n) {
+  if (n == '+')
+    return a + b;
+  if (n == '-')
+    return a - b;
+  if (n == '*')
+    return a * b;
+  if (n == '/')
+    return a / b;
+  if (n == '%')
+    return a / b * 100;
+  else
+    return pow(a, b);
+}
+double operation(double a, char n) {
+  if (n == 's')
+    return sin(a);
+  if (n == 'c')
+    return cos(a);
+  if (n == 'd')
+    return a * PI / 180;
+  if (n == 'R')
+    return a * 180 / PI;
+  if (n == 'r')
+    return sqrt(a);
+  if (n == 't')
+    return tan(a);
+  if (n == 'T')
+    return atan(a);
+  if (n == 'S')
+    return asin(a);
+  if (n == 'C')
+    return acos(a);
+  if (n == '!')
+    return factorial(a);
+}
+bool contains(String a, String b) {
+  if (a.indexOf(b) >= 0)
+    return true;
+  else
+    return false;
+}
 void allPinsOn() {
   for (int i = startP; i <= endP; i++) {
     digitalWrite(i, HIGH);
   }
 }
-
 void allPinsOff() {
   for (int i = startP; i <= endP; i++) {
     digitalWrite(i, LOW);
   }
 }
-
 bool oneIsOn() {
   return digitalRead(6) || digitalRead(7) || digitalRead(8) || digitalRead(9);
 }
-
 int pinHig() {
   for (int i = endP + 1; i <= endP2; i++)
     if (digitalRead(i)) {
       return i - 6;
     }
 }
-
 int buttonWhatIsOn() {
   for (int i = startP; i <= endP; i++) {
     allPinsOff();
@@ -58,17 +121,14 @@ int buttonWhatIsOn() {
   }
   return -1;
 }
-
 void setupWriting(int x, int y) {
   dis.setTextColor(WHITE);
   dis.setCursor(x, y);
 }
-
 bool buttonIsStillPressed(int button) {
   digitalWrite(button / 4 + 2, HIGH);
   return digitalRead(button%4 + 6);
 }
-
 void buildAGraph() {
   graphOn = true;
   dis.clearDisplay();
@@ -85,51 +145,56 @@ void buildAGraph() {
     i += x / 2 + sum;
   }
 }
-
-double countByStr() {
-  /*
-  bool firstWas = false;
-  bool firstDot = false;
-  int firstDit = 0;
-  double first = 0;
-  double second = 0;
-  char dos = '\0';
-  for (int i = 0; i < input.length(); i++) {
-    if (!firstWas) {
-      if ((int)input[i] > 47 && (int)input[i] < 72) {
-        first *= 10;
-        first += (int)input[i] - 48;
-        if (firstDot) {
-          firstDit++;
-        }
+double countByStr(String inp) {
+  if (contains(inp, "(")) {
+    int first = inp.indexOf("(")+1;
+    int second = -1;
+    int n = 1;
+    for (int i = inp.indexOf("(") + 1; i < inp.length(); i++) {
+      if (inp[i] == '(')
+        n++;
+      else if (inp[i] == ')')
+        n--;
+      if (n == 0) {
+        second = i;
+        double res = countByStr(inp.substring(first, second));
+        String repl = "";
+        repl += res;
+        inp.replace(inp.substring(first - 1, second + 1), repl);
+        second = -1;
+        i = inp.substring(i + 1).indexOf("(");
+        n = 1;
+        first = i;
       }
-      else if (input[i] == '.') {
-        firstDot = true;
-      }
-      else {
-        firstWas = true;
-        dos = input[i];
-      }
-    }
-    else {
-      if(true)
-      second *= 10;
-      second += (int)input[i] - 48;
     }
   }
-  Serial.println((int)(first / second*1000)%10);
-  if (dos == '+')
-    return first + second;
-  if (dos == '-')
-    return first - second;
-  if (dos == '*')
-    return first * second;
-  if (dos == '/')
-    return first / second;
-  if (dos == 'r')
-    return sqrt(first);
-    */
-  printMoreDigit(te_interp(input.c_str(), &setDigit));
+  for(int i = 0; i < sizeof(twoOp); i++)
+    if (contains(inp, (String)twoOp[i])) {
+      String doWith = split(inp, twoOp[i], 0);
+      double first = countByStr(doWith);
+      doWith = inp.substring(inp.indexOf(twoOp[i]) + 1);
+      double second = countByStr(doWith);
+      return operation(first, second, twoOp[i]);
+    }
+  for(int i = 0; i < sizeof(oneOp); i++)
+    if (contains(inp, (String)oneOp[i])) {
+      String doWith = split(inp, oneOp[i], 1);
+      double first = countByStr(doWith);
+      return operation(first, oneOp[i]);
+    }
+  return inp.toDouble();
+}
+void printMap() {
+  for (int i = 0; i < 4; i++) {
+    dis.setTextColor(WHITE);
+    dis.setCursor(128 - 24, 8 * i);
+      for (int j = 0; j < 4; j++) {
+        dis.print(map1[i * 4 + j]);
+        //dis.print(' ');
+      }
+      dis.print('\n');
+  }
+  dis.display();
 }
 
 void setup() {
@@ -168,7 +233,7 @@ void printMoreDigit(double inp) {
 }
 
 void afterClick(int button) {
-  if (input == "" && map1[button] == 'r') {
+  if (input == "" && map1[button] == 'K') {
     buildAGraph();
   }
   else if (graphOn) {
@@ -182,23 +247,40 @@ void afterClick(int button) {
     }
     else if (button == 15) {
       graphOn = false;
+      input = "";
+      dis.clearDisplay();
+      setupWriting(0, 0);
+      dis.print(input + "0");
+      printMap();
+      dis.display();
     }
+  }
+  else if (map1[button] == 'K') {
+    input = "";
+    dis.clearDisplay();
+    setupWriting(0, 0);
+    dis.print(input + "0");
+    dis.display();
   }
   else if (map1[button] != '=') {
     input += map1[button];
-    setupWriting(0, 0);
     dis.clearDisplay();
+    setupWriting(0, 0);
     dis.print(input);
     dis.display();
   }
   else {
-    setupWriting(0, 0);
     dis.clearDisplay();
-    printMoreDigit(countByStr());
+    setupWriting(0, 0);
+    input.replace("-", "+-");
+    double res = countByStr(input);
+    printMoreDigit(res);
     dis.display();
     input = "";
+    input += res;
   }
-
+  if(!graphOn)
+  printMap();
   allPinsOff();
   buttonSPressing = millis();
   while(buttonIsStillPressed(button)){
@@ -206,12 +288,14 @@ void afterClick(int button) {
     doWhileButtonPressed(button);
   }
 
+  delay(100);
   allPinsOn();
 }
 
 void writingInSetup() {
   dis.print(sum);
   dis.display();
+  printMap();
 }
 
 void loop() {
