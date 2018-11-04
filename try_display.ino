@@ -11,11 +11,12 @@ int y = 128;
 int longPressTime = 1000;
 int delayInLongPress = 100;
 int setDigit = 6;
-char map1[] = {'1', '2', '3', '+',
-         '4', '5', '6', '-',
-         '7', '8', '9', '*',
-         '=', '0', 'K', '.'};
+char map1[] = {'1', '2', '3', '*',
+         '4', '5', '6', 'x',
+         '7', '(', ')', '-',
+         '=', '0', 'K', 's'};
 String input = "";
+String pinput = "";
 char twoOp[] = { '+', '-','*', '/', '%' };
 char oneOp[] = {'s', 'c', 'd', 't', 'S', 'C', 'T', 'R', 'r', '!'};
 int startP = 2;
@@ -24,7 +25,15 @@ int endP = 5;
 //in
 int endP2 = 9;
 
+bool flip = false;
 int sum = 0;
+int up = 0;
+int m = 2;
+
+double toD(String da) {
+  da.replace("н", "-");
+  return da.toDouble();
+}
 
 String split(String a, char b, int n) {
   String ret = "";
@@ -133,16 +142,30 @@ void buildAGraph() {
   graphOn = true;
   dis.clearDisplay();
   dis.display();
-  //for x^2
-  for (int i = 0; i < x; i++) {
-    i -= x / 2 + sum;
-    int x1 = i * i / 4;
-    int y1 = i + x / 2 + sum;
-    int x2 = (i-1) * (i-1) / 4;
-    int y2 = i + x / 2 + sum-1;
-    dis.drawLine(x1, y1, x2, y2, WHITE);
+  for (double i = 0; i < x; i++) {
+    String eqa = pinput;
+    String repl = "(";
+    i -= (flip?up: sum);
+    repl += i;
+    repl += ")";
+    eqa.replace("x", repl);
+    eqa.replace("-", "+-");
+    double res = countByStr(eqa);
+    double x1 = (flip? (i)*m + sum :(res)*m + up);
+    double y1 = (flip? -(res)*m + up :(i)*m + sum);
+    i--;
+    eqa = pinput;
+    repl = "(";
+    repl += i;
+    repl += ")";
+    eqa.replace("x", repl);
+    eqa.replace("-", "+-");
+    res = countByStr(eqa);
+      double x2 = (flip? (i)*m + sum :(res)*m + up);
+    double y2 = (flip ? -(res)*m + up : (i)*m + sum);
+    dis.drawLine((int)x1, (int)y1, (int)x2, (int)y2, WHITE);
+    i += (flip?up:sum) + 1;
     dis.display();
-    i += x / 2 + sum;
   }
 }
 double countByStr(String inp) {
@@ -160,6 +183,7 @@ double countByStr(String inp) {
         double res = countByStr(inp.substring(first, second));
         String repl = "";
         repl += res;
+        repl.replace("-", "н");
         inp.replace(inp.substring(first - 1, second + 1), repl);
         second = -1;
         i = inp.substring(i + 1).indexOf("(");
@@ -182,7 +206,7 @@ double countByStr(String inp) {
       double first = countByStr(doWith);
       return operation(first, oneOp[i]);
     }
-  return inp.toDouble();
+  return toD(inp);
 }
 void printMap() {
   for (int i = 0; i < 4; i++) {
@@ -224,20 +248,29 @@ void buttonOnCLick() {
 
 void doWhileButtonPressed(int button) {
   if (millis() - buttonSPressing > longPressTime) {
-    delay(400);
+    if (map1[button] == 'K' && !graphOn) {
+      sum = flip ? y / 2 : x / 2;
+      up = flip ? x / 2 : y / 2;
+      buildAGraph();
+      delay(400);
+    }
   }
-}
-
-void printMoreDigit(double inp) {
-  dis.print(inp, setDigit);
-}
-
-void afterClick(int button) {
-  if (input == "" && map1[button] == 'K') {
-    buildAGraph();
-  }
-  else if (graphOn) {
-    if (button == 7 || button == 11) {
+  if(graphOn)
+    if (button == 14 || button == 13) {
+      if (flip)
+        up -= 1;
+      else
+        up += 1;
+      buildAGraph();
+    }
+    else if (button == 1 || button == 2) {
+      if (flip)
+        up += 1;
+      else
+        up -= 1;
+      buildAGraph();
+    }
+    else if (button == 7 || button == 11) {
       sum += 1;
       buildAGraph();
     }
@@ -245,9 +278,22 @@ void afterClick(int button) {
       sum -= 1;
       buildAGraph();
     }
-    else if (button == 15) {
+    else if (button == 0) {
+      flip = !flip;
+      sum = flip ? y / 2 : x / 2;
+      up = flip ? x / 2 : y / 2;
+      buildAGraph();
+    }
+}
+
+void printMoreDigit(double inp) {
+  dis.print(inp, setDigit);
+}
+
+void afterClick(int button) {
+  if (graphOn) {
+    if (button == 15) {
       graphOn = false;
-      input = "";
       dis.clearDisplay();
       setupWriting(0, 0);
       dis.print(input + "0");
@@ -256,6 +302,7 @@ void afterClick(int button) {
     }
   }
   else if (map1[button] == 'K') {
+    pinput = input;
     input = "";
     dis.clearDisplay();
     setupWriting(0, 0);
@@ -288,6 +335,7 @@ void afterClick(int button) {
     doWhileButtonPressed(button);
   }
 
+  dis.stopscroll();
   delay(100);
   allPinsOn();
 }
