@@ -28,7 +28,7 @@ int endP2 = 9;
 bool flip = false;
 int sum = 0;
 int up = 0;
-int m = 2;
+double m = 1;
 
 double toD(String da) {
   da.replace("н", "-");
@@ -142,10 +142,9 @@ void buildAGraph() {
   graphOn = true;
   dis.clearDisplay();
   dis.display();
-  for (double i = 0; i < x; i++) {
+  for (double i = -(flip ? y - up : x - sum)/m; i < (flip ? y - up : x - sum)/m; i+=(double)1/m*2) {
     String eqa = pinput;
     String repl = "(";
-    i -= (flip?up: sum);
     repl += i;
     repl += ")";
     eqa.replace("x", repl);
@@ -153,7 +152,7 @@ void buildAGraph() {
     double res = countByStr(eqa);
     double x1 = (flip? (i)*m + sum :(res)*m + up);
     double y1 = (flip? -(res)*m + up :(i)*m + sum);
-    i--;
+    i-= (double)1/m*2;
     eqa = pinput;
     repl = "(";
     repl += i;
@@ -161,11 +160,11 @@ void buildAGraph() {
     eqa.replace("x", repl);
     eqa.replace("-", "+-");
     res = countByStr(eqa);
-      double x2 = (flip? (i)*m + sum :(res)*m + up);
+      double x2 = (flip? (i)*m + sum:(res)*m + up);
     double y2 = (flip ? -(res)*m + up : (i)*m + sum);
     dis.drawLine((int)x1, (int)y1, (int)x2, (int)y2, WHITE);
-    i += (flip?up:sum) + 1;
     dis.display();
+    i+=(double)1/m*2;
   }
 }
 double countByStr(String inp) {
@@ -258,30 +257,38 @@ void doWhileButtonPressed(int button) {
   if(graphOn)
     if (button == 14 || button == 13) {
       if (flip)
-        up -= 1;
+        up += 4;
       else
-        up += 1;
+        up -= 4;
       buildAGraph();
     }
     else if (button == 1 || button == 2) {
       if (flip)
-        up += 1;
+        up -= 4;
       else
-        up -= 1;
+        up += 4;
       buildAGraph();
     }
     else if (button == 7 || button == 11) {
-      sum += 1;
+      sum += 4;
       buildAGraph();
     }
     else if (button == 4 || button == 8) {
-      sum -= 1;
+      sum -= 4;
       buildAGraph();
     }
     else if (button == 0) {
       flip = !flip;
       sum = flip ? y / 2 : x / 2;
       up = flip ? x / 2 : y / 2;
+      buildAGraph();
+    }
+    else if (button == 5) {
+      m/=2;
+      buildAGraph();
+    }
+    else if (button == 6) {
+      m*=2;
       buildAGraph();
     }
 }
