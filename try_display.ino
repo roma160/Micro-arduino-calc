@@ -10,9 +10,9 @@ int x = 32;
 int y = 128;
 int longPressTime = 1000;
 int delayInLongPress = 100;
-int setDigit = 6;
+int maxDigitsStringToDouble = 3;
 char map1[] = {'1', '2', '3', '*',
-         '4', '5', '6', 'x',
+         '4', '5', '/', '.',
          '7', '(', ')', '-',
          '=', '0', 'K', 's'};
 String input = "";
@@ -34,6 +34,12 @@ double toD(String da) {
   da.replace("н", "-");
   return da.toDouble();
 }
+
+String toS(double D){
+ String ret = "";
+ ret+=D;
+    return ret;
+  }
 
 String split(String a, char b, int n) {
   String ret = "";
@@ -169,25 +175,25 @@ void buildAGraph() {
 }
 double countByStr(String inp) {
   if (contains(inp, "(")) {
-    int first = inp.indexOf("(")+1;
+    int first = -1;
     int second = -1;
-    int n = 1;
-    for (int i = inp.indexOf("(") + 1; i < inp.length(); i++) {
-      if (inp[i] == '(')
+    int n = 0;
+    for (int i = 0; i < inp.length(); i++) {
+      if (inp[i] == '(') {
         n++;
+        first = i + 1;
+      }
       else if (inp[i] == ')')
         n--;
-      if (n == 0) {
+      if (n == 0 && first != -1) {
         second = i;
         double res = countByStr(inp.substring(first, second));
-        String repl = "";
-        repl += res;
+        String repl = toS(res);
         repl.replace("-", "н");
         inp.replace(inp.substring(first - 1, second + 1), repl);
         second = -1;
-        i = inp.substring(i + 1).indexOf("(");
-        n = 1;
-        first = i;
+        first =-1;
+        i = inp.indexOf('(')-1;
       }
     }
   }
@@ -294,7 +300,7 @@ void doWhileButtonPressed(int button) {
 }
 
 void printMoreDigit(double inp) {
-  dis.print(inp, setDigit);
+  dis.print(inp, maxDigitsStringToDouble);
 }
 
 void afterClick(int button) {
@@ -331,7 +337,7 @@ void afterClick(int button) {
     printMoreDigit(res);
     dis.display();
     input = "";
-    input += res;
+    input += toS(res);
   }
   if(!graphOn)
   printMap();
